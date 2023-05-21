@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
+require './colorable'
+
 # module to include and print instructions of Hangman  before start of game
 module Instructions
+  using Colorable
+
   def instructions
     <<~TEXT
 
@@ -18,9 +22,11 @@ module Instructions
 
       Do you want to:
 
-      \e[41m  1  \e[0m Play a new game
-      \e[42m  2  \e[0m Load a saved game
-
     TEXT
+  end
+
+  def user_choice_text
+    puts "#{'  1  '.bg_color(:frost1)} Play a new game"
+    puts "#{'  2  '.bg_color(:frost3)} Load a saved game\n\n"
   end
 end
