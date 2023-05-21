@@ -3,6 +3,7 @@
 require './instructions'
 require './display'
 require './colorable'
+require 'yaml'
 
 # class representing a full game of Hangman
 class Game
@@ -10,13 +11,14 @@ class Game
   include Display
   using Colorable
 
-  attr_accessor :secret_word, :player_guess, :player_word
+  attr_accessor :secret_word, :player_guess, :player_word, :incorrect_guesses
 
   def initialize
     @dictionary = File.open('dictionary.txt', 'r')
     @secret_word = random_word.split('')
     @player_word = set_blank_word
     @player_guess = nil
+    @incorrect_guesses = 0
     p @secret_word
   end
 
@@ -53,14 +55,22 @@ class Game
   end
 
   def launch_game
-    incorrect_guesses = 0
-    return unless game_option == 1
+    if game_option == 1
+      game_start
+    else
+      files_list
+      game = load_game("./saves/#{pick_save}")
+      @secret_word = game.secret_word
+      @player_word = game.player_word
+      @player_guess = game.player_guess
+      @incorrect_guesses = game.incorrect_guesses
+      game_start
+    end
 
-    game_start
-    until win? || incorrect_guesses == 8
+    until win? || @incorrect_guesses == 8
       @player_guess = new_guess
-      incorrect_guesses += 1 unless good_guess?
-      puts "\nCareful, only one more guess!".fg_color(:aurora1) if incorrect_guesses == 7
+      @incorrect_guesses += 1 unless good_guess?
+      puts "\nCareful, only one more guess!".fg_color(:aurora1) if @incorrect_guesses == 7
       update_player_word
       reveal_word
     end
@@ -75,8 +85,17 @@ class Game
   def new_guess
     loop do
       puts "\nYour turn to guess one letter: "
+      puts "Alternatively, you can type 'save' or 'exit' to quit the game."
       guess = gets.chomp
-      return guess if guess.match?(/\A[a-zA-Z]+\z/) && guess.length == 1
+      if guess.match?(/\A[a-zA-Z]+\z/) && guess.length == 1
+        return guess
+      elsif guess == 'save'
+        puts 'save the game'
+        save_game
+        exit
+      elsif guess == 'exit'
+        exit
+      end
 
       puts "\nPlease enter only one alphabetic character.".fg_color(:aurora1)
     end
@@ -95,6 +114,46 @@ class Game
   def win?
     @player_word.join == @secret_word.join
   end
+
+  def save_game
+    File.open(random_file_name, 'wb') do |file|
+      file.puts YAML.dump(self)
+    end
+  end
+
+  def random_file_name
+    loop do
+      filename = "Game_##{rand(1..100)}.yaml"
+      filepath = File.join('./saves', filename)
+      puts filepath
+
+      return filepath unless File.exist?(filepath)
+    end
+  end
+
+  def load_game(filepath)
+    YAML.unsafe_load_file(filepath)
+  end
+
+  def files_list
+    puts "\n#{'  #  '.bg_color(:frost2)} File Name(s)\n\n"
+    files = Dir.entries('./saves').select { |f| File.file?(File.join('./saves', f)) }
+    files.each_with_index { |file, index| puts "  #{index + 1}  ".bg_color(:frost2) + " #{file}\n\n" }
+    files
+  end
+
+  def pick_save
+    loop do
+      puts 'Enter the save number you wish to load: '
+      save_num = gets.chomp.to_i
+
+      return files_list[save_num - 1] if save_num.between?(1, files_list.length)
+
+      puts 'Incorrect save number.'
+    end
+  end
 end
 
-Game.new.start
+game = Game.new.start
+
+# load_game('./saves/Game_#3.txt')
