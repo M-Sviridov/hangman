@@ -26,7 +26,7 @@ module Instructions
   end
 
   def user_choice_text
-    puts "#{'  1  '.bg_color(:frost1)} Play a new game"
+    puts "#{'  1  '.bg_color(:frost1)} Play a new game\n\n"
     puts "#{'  2  '.bg_color(:frost3)} Load a saved game\n\n"
   end
 end
