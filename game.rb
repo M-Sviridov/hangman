@@ -10,12 +10,14 @@ class Game
   include Display
   using Colorable
 
-  attr_accessor :secret_word
+  attr_accessor :secret_word, :player_guess, :player_word
 
   def initialize
     @dictionary = File.open('dictionary.txt', 'r')
-    @secret_word = random_word
-    @player_guess = set_blank_word
+    @secret_word = random_word.split('')
+    @player_word = set_blank_word
+    @player_guess = nil
+    p @secret_word
   end
 
   def start
@@ -27,7 +29,7 @@ class Game
   def random_word
     array = []
     @dictionary.each_line do |line|
-      line.chomp
+      line.chomp!
       array << line if line.length.between?(5, 12)
     end
     array.sample
@@ -51,17 +53,47 @@ class Game
   end
 
   def launch_game
-    game_start if game_option == 1
+    incorrect_guesses = 0
+    return unless game_option == 1
+
+    game_start
+    until win? || incorrect_guesses == 8
+      @player_guess = new_guess
+      incorrect_guesses += 1 unless good_guess?
+      puts "\nCareful, only one more guess!".fg_color(:aurora1) if incorrect_guesses == 7
+      update_player_word
+      reveal_word
+    end
+
+    if win?
+      puts "\nCongratulations! You won.".fg_color(:aurora4)
+    elsif incorrect_guesses == 8
+      puts "\nSorry! You lost.".fg_color(:aurora1)
+    end
   end
 
   def new_guess
     loop do
-      puts 'Your turn to guess one letter: '
+      puts "\nYour turn to guess one letter: "
       guess = gets.chomp
-      return guess unless guess.match?(/\A[a-zA-Z]+\z/)
+      return guess if guess.match?(/\A[a-zA-Z]+\z/) && guess.length == 1
 
-      puts 'Please enter only one alphabetic character.'
+      puts "\nPlease enter only one alphabetic character.".fg_color(:aurora1)
     end
+  end
+
+  def good_guess?
+    @secret_word.include?(@player_guess)
+  end
+
+  def update_player_word
+    @secret_word.each_with_index do |char, index|
+      @player_word[index] = char if char == @player_guess
+    end
+  end
+
+  def win?
+    @player_word.join == @secret_word.join
   end
 end
 
