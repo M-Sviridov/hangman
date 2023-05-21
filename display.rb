@@ -8,7 +8,7 @@ module Display
   using Colorable
 
   def reveal_word
-    @player_guess.each { |char| print char.fg_color(:aurora4) }
+    @player_word.each { |char| print char.fg_color(:aurora4) }
     puts ''
   end
 
