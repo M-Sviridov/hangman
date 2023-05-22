@@ -1,0 +1,23 @@
+--- !ruby/object:Game
+dictionary: !ruby/object:File {}
+secret_word:
+- m
+- a
+- r
+- i
+- a
+- h
+player_word:
+- _
+- a
+- _
+- _
+- a
+- h
+player_guess: h
+incorrect_guesses: 3
+letters_guessed:
+- e
+- b
+- a
+- h
