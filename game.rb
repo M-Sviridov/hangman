@@ -3,14 +3,14 @@
 require './instructions'
 require './display'
 require './colorable'
-require './game_state'
+require './game_management'
 require 'yaml'
 
 # class representing a full game of Hangman
 class Game
   include Instructions
   include Display
-  include GameState
+  include GameManagement
   using Colorable
 
   attr_accessor :secret_word, :player_guess, :player_word, :incorrect_guesses, :letters_guessed
@@ -52,44 +52,36 @@ class Game
       option = gets.chomp.to_i
       return option if [1, 2].include?(option)
 
-      puts 'Please enter either 1 or 2.'.fg_color(:aurora1)
+      puts "\nPlease enter either 1 or 2.\n".fg_color(:aurora1)
     end
   end
 
   def launch_game
     unless game_option == 1
       files_list
-      game = load_game("./saves/#{pick_save}")
-      @secret_word = game.secret_word
-      @player_word = game.player_word
-      @player_guess = game.player_guess
-      @incorrect_guesses = game.incorrect_guesses
-      @letters_guessed = game.letters_guessed
+      load_game("./saves/#{pick_save}")
     end
-    game_start
+    game_start_text
 
-    until win? || @incorrect_guesses == 8
-      @player_guess = new_guess
-      @incorrect_guesses += 1 unless good_guess?
-      puts "\nCareful, only one more guess!".fg_color(:aurora1) if @incorrect_guesses == 7
-      update_player_word
-      reveal_word
-    end
+    new_turn until win? || @incorrect_guesses == 8
 
-    if win?
-      puts "\nCongratulations! You won.".fg_color(:aurora4)
-    elsif incorrect_guesses == 8
-      puts "\nSorry! You lost.".fg_color(:aurora1)
-    end
+    show_end_game_status
   end
 
-  def new_guess
+  def new_turn
+    @player_guess = new_guess
+    @incorrect_guesses += 1 unless good_guess?
+    puts "\nCareful, only one more guess!\n".fg_color(:aurora1) if @incorrect_guesses == 7
+    update_player_word
+    reveal_word
+  end
+
+  def new_guess # rubocop:disable Metrics/MethodLength
     loop do
-      puts "\nYour turn to guess one letter."
-      puts "Alternatively, you can type 'save' or 'exit' to quit the game.\n\n"
+      puts new_guess_text
       guess = gets.chomp
       if guess.match?(/\A[a-zA-Z]+\z/) && guess.length == 1
-        @letters_guessed << guess
+        @letters_guessed << guess unless @letters_guessed.include?(guess)
         return guess
       elsif guess == 'save'
         save_game
@@ -97,9 +89,12 @@ class Game
       elsif guess == 'exit'
         exit
       end
-
-      puts "\nPlease enter only one alphabetic character.".fg_color(:aurora1)
+      incorrect_guess_text
     end
+  end
+
+  def valid_guess?(guess)
+    guess.match?(/\A[a-zA-Z]+\z/) && guess.length == 1 && !@letters_guessed.include?(guess)
   end
 
   def good_guess?
@@ -116,5 +111,3 @@ class Game
     @player_word.join == @secret_word.join
   end
 end
-
-game = Game.new.start
